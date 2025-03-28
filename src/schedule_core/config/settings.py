@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from urllib.parse import quote_plus
+from typing import Optional
 
 # 项目根目录
 BASE_DIR = Path(__file__).parent.parent
@@ -23,6 +24,10 @@ class CoreSettings(BaseSettings):
     MYSQL_PORT: int = 3306
     MYSQL_DATABASE: str = ""
     MYSQL_CHARSET: str = "utf8mb4"
+    MYSQL_POOL_SIZE: int = 5
+    MYSQL_MAX_OVERFLOW: int = 10
+    MYSQL_POOL_TIMEOUT: int = 30
+    MYSQL_POOL_RECYCLE: int = 1800
 
     # 使用 property 装饰器来动态构建 DATABASE_URL
     @property
@@ -40,15 +45,20 @@ class CoreSettings(BaseSettings):
     # Redis配置
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
-    REDIS_PASSWORD: str = ""
     REDIS_DB: int = 0
+    REDIS_PASSWORD: Optional[str] = None
+    REDIS_MAX_CONNECTIONS: int = 10
+    REDIS_SOCKET_TIMEOUT: int = 5
+    REDIS_SOCKET_CONNECT_TIMEOUT: int = 5
 
     # RabbitMQ配置
     RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
+    RABBITMQ_VHOST: str = "/"
     RABBITMQ_USER: str = "guest"
     RABBITMQ_PASSWORD: str = "guest"
-    RABBITMQ_VHOST: str = "/"
+    RABBITMQ_HEARTBEAT: int = 600
+    RABBITMQ_BLOCKED_CONNECTION_TIMEOUT: int = 300
 
     class Config:
         env_file = ".env"
