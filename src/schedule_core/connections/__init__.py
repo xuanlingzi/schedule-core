@@ -4,6 +4,6 @@
 
 from .database import DatabaseManager
 from .redis import RedisManager
-from .mq import MQManager
+from .mq import RabbitMQManager
 
-__all__ = ["DatabaseManager", "RedisManager", "MQManager"]
+__all__ = ["DatabaseManager", "RedisManager", "RabbitMQManager"]

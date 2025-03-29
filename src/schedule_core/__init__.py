@@ -6,7 +6,6 @@ __version__ = "0.1.0"
 
 from schedule_core.core.scheduler import TaskScheduler
 from schedule_core.utils.logger import logger, get_logger
-from schedule_core.utils.rabbitmq import RabbitMQClient
 from schedule_core.config.settings import core_settings
 from schedule_core.connections.database import db_manager
 from schedule_core.connections.redis import redis_manager
@@ -16,7 +15,6 @@ __all__ = [
     "TaskScheduler",
     "logger",
     "get_logger",
-    "RabbitMQClient",
     "core_settings",
     "db_manager",
     "redis_manager",
