@@ -32,15 +32,13 @@ class CoreSettings(BaseSettings):
     # 使用 property 装饰器来动态构建 DATABASE_URL
     @property
     def DATABASE_URL(self) -> str:
-        return (
-            f"mysql+pymysql://"
-            f"{self.MYSQL_USER}:"
-            f"{quote_plus(self.MYSQL_PASSWORD)}@"
-            f"{self.MYSQL_HOST}:"
-            f"{self.MYSQL_PORT}/"
-            f"{self.MYSQL_DATABASE}"
-            f"?charset={self.MYSQL_CHARSET}"
-        )
+        return (f"mysql+pymysql://"
+                f"{self.MYSQL_USER}:"
+                f"{quote_plus(self.MYSQL_PASSWORD)}@"
+                f"{self.MYSQL_HOST}:"
+                f"{self.MYSQL_PORT}/"
+                f"{self.MYSQL_DATABASE}"
+                f"?charset={self.MYSQL_CHARSET}")
 
     # Redis配置
     REDIS_HOST: str = "localhost"
@@ -59,6 +57,12 @@ class CoreSettings(BaseSettings):
     RABBITMQ_PASSWORD: str = "guest"
     RABBITMQ_HEARTBEAT: int = 600
     RABBITMQ_BLOCKED_CONNECTION_TIMEOUT: int = 300
+
+    # 微信配置
+    WECHAT_APP_ID: str = ""
+    WECHAT_APP_SECRET: str = ""
+    WECHAT_CALLBACK_ADDR: str = ""
+    WECHAT_SCOPE: str = "snsapi_userinfo"
 
     class Config:
         env_file = ".env"
