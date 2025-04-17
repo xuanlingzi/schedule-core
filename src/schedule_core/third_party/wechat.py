@@ -11,7 +11,7 @@ import aiohttp
 from datetime import datetime
 from typing import Tuple, Optional, Dict, Any, Union, List
 from schedule_core import logger
-from schedule_core.connections import redis_manager
+from schedule_core.connections.redis import redis_manager
 
 # 微信API端点
 WECHAT_API_BASE = "https://api.weixin.qq.com"
