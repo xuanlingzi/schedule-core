@@ -13,9 +13,12 @@ BASE_DIR = Path(__file__).parent.parent
 
 
 class CoreSettings(BaseSettings):
+    """核心配置类"""
     # 日志配置
-    LOG_DIR: Path = BASE_DIR / "logs"
+    LOG_DIR: Path = Path("schedule_core")
     LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - [%(module)s:%(lineno)d] - %(message)s"
+    LOG_DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
     # 数据库配置
     MYSQL_USER: str = ""

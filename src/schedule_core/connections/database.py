@@ -49,7 +49,8 @@ class DatabaseManager:
         )
 
         # 创建会话工厂
-        self._SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
+        self._SessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=self._engine)
 
         # 创建基类
         self._Base = declarative_base()
