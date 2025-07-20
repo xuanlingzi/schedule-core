@@ -67,11 +67,12 @@ class CoreSettings(BaseSettings):
     WECHAT_CALLBACK_ADDR: str = ""
     WECHAT_SCOPE: str = "snsapi_userinfo"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "allow"
-        case_sensitive = True  # 确保大小写敏感
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "allow",
+        "case_sensitive": True  # 确保大小写敏感
+    }
 
 
 # 创建全局设置实例
