@@ -20,6 +20,13 @@ class CoreSettings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - [%(module)s:%(lineno)d] - %(message)s"
     LOG_DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
+    # 日志切分配置
+    LOG_ROTATE_BY_TIME: bool = True  # 是否按时间切分，False则按大小切分
+    LOG_ROTATE_INTERVAL: str = "D"  # 切分时间单位: D=天, H=小时, M=分钟, S=秒
+    LOG_ROTATE_SUFFIX: str = "%Y-%m-%d"  # 日志文件后缀格式
+    LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10MB，按大小切分时使用
+    LOG_BACKUP_COUNT: int = 30  # 保留的备份文件数量
+
     # 数据库配置
     MYSQL_USER: str = ""
     MYSQL_PASSWORD: str = ""

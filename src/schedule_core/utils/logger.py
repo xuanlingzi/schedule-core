@@ -4,7 +4,7 @@ Logging utility for applications.
 
 import logging
 import sys
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from schedule_core.config.settings import core_settings as settings
 
 
@@ -34,12 +34,24 @@ def get_logger(name="schedule_core", log_file=None):
     if log_file is None:
         log_file = f"{name}.log"
 
-    # 使用 RotatingFileHandler 替代 FileHandler
-    file_handler = RotatingFileHandler(
-        filename=settings.LOG_DIR / log_file,
-        maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
-        encoding="utf-8")
+    # 根据配置选择使用按大小切分还是按日期切分
+    if settings.LOG_ROTATE_BY_TIME:
+        # 使用 TimedRotatingFileHandler 按日期切分日志
+        file_handler = TimedRotatingFileHandler(
+            filename=settings.LOG_DIR / log_file,
+            when=settings.LOG_ROTATE_INTERVAL,  # 'D'表示按天切分，'H'表示按小时切分
+            interval=1,  # 每1个单位进行切分
+            backupCount=settings.LOG_BACKUP_COUNT,
+            encoding="utf-8")
+        # 设置日志文件后缀格式为 .YYYY-MM-DD
+        file_handler.suffix = settings.LOG_ROTATE_SUFFIX
+    else:
+        # 使用 RotatingFileHandler 按大小切分日志
+        file_handler = RotatingFileHandler(
+            filename=settings.LOG_DIR / log_file,
+            maxBytes=settings.LOG_MAX_BYTES,
+            backupCount=settings.LOG_BACKUP_COUNT,
+            encoding="utf-8")
     file_handler.setLevel(settings.LOG_LEVEL)
 
     # 创建格式化器，使用更详细的日志格式
