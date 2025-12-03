@@ -6,6 +6,7 @@
 from .database import db_manager
 from .redis import redis_manager
 from .mq import mq_manager
+from .wechat import wechat_manager
 from schedule_core.config.settings import core_settings
 import logging
 
@@ -26,6 +27,10 @@ def init_connections():
         # 初始化MQ连接
         logger.info("正在初始化MQ连接...")
         mq_manager._initialize()
+
+        # 初始化微信连接
+        logger.info("正在初始化微信连接...")
+        wechat_manager._initialize()
 
         logger.info("所有连接初始化完成")
     except Exception as e:
