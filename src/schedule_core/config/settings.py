@@ -74,6 +74,23 @@ class CoreSettings(BaseSettings):
     WECHAT_CALLBACK_ADDR: str = ""
     WECHAT_SCOPE: str = "snsapi_userinfo"
 
+    # SMTP配置
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 465
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
+
+    # 短信配置
+    SMS_ADDR: str = ""
+    SMS_SECRET_ID: str = ""
+    SMS_SECRET_KEY: str = ""
+    SMS_APP_ID: str = ""
+    SMS_APP_KEY: str = ""
+    SMS_REGION: str = ""
+    SMS_ALG: str = ""
+    SMS_SIGNATURE: str = ""
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
