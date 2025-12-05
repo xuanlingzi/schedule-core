@@ -10,7 +10,9 @@ from schedule_core.config.settings import core_settings
 from schedule_core.connections.database import db_manager
 from schedule_core.connections.redis import redis_manager
 from schedule_core.connections.mq import mq_manager
-from schedule_core.third_party.wechat import wechat_manager
+from schedule_core.connections.wechat import wechat_manager
+from schedule_core.connections.smtp import smtp_manager
+from schedule_core.connections.sms import sms_manager
 
 __all__ = [
     "TaskScheduler",
@@ -21,4 +23,6 @@ __all__ = [
     "redis_manager",
     "mq_manager",
     "wechat_manager",
+    "smtp_manager",
+    "sms_manager",
 ]

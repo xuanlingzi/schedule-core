@@ -20,22 +20,12 @@ from schedule_core.config.settings import core_settings as settings
 class SmsManager:
     """腾讯云短信客户端"""
 
-    _instance: Optional["SmsManager"] = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(SmsManager, cls).__new__(cls)
-        return cls._instance
-
     def __init__(self):
         """初始化短信客户端"""
-        self._initialized = False
+        self._initialize()
 
     def _initialize(self):
         """初始化配置参数"""
-        if self._initialized:
-            return
-
         self.host = settings.SMS_ADDR or "sms.tencentcloudapi.com"
         self.secret_id = settings.SMS_SECRET_ID
         self.secret_key = settings.SMS_SECRET_KEY
@@ -45,7 +35,6 @@ class SmsManager:
         self.signature = settings.SMS_SIGNATURE
         self.service = "sms"
         self.version = "2021-01-11"
-        self._initialized = True
 
     def _sha256_hex(self, message: str) -> str:
         """SHA256哈希并返回十六进制字符串"""

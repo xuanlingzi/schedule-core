@@ -14,38 +14,15 @@ from email.mime.multipart import MIMEMultipart
 # 全局锁
 _smtp_lock = threading.Lock()
 
-# 全局smtp客户端
-_smtp: Optional[smtplib.SMTP_SSL] = None
-
 
 class SmtpManager:
     """SMTP邮件客户端"""
 
-    _instance: Optional["SmtpManager"] = None
-    _client: Optional[smtplib.SMTP_SSL] = None
-    _from_addr: Optional[str] = None
-
     def __init__(self):
-        """
-        初始化SMTP客户端
-        
-        Args:
-            host: SMTP服务器地址
-            port: SMTP服务器端口
-            username: 用户名
-            password: 密码
-            from_addr: 发件人地址
-        """
-
-        if self._instance is None:
-            self._instance = super(SmtpManager, self).__new__(self)
-        return self._instance
+        self._initialize()
 
     def _initialize(self):
         """初始化SMTP客户端"""
-        if self._client is not None:
-            return
-
         context = ssl.create_default_context()
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE

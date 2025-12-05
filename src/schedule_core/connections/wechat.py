@@ -36,46 +36,22 @@ WECHAT_PLATFORM_MINI = "miniprogram"  # 小程序
 WECHAT_PLATFORM_OPEN = "open"  # 开放平台
 WECHAT_PLATFORM_QR = "qrlogin"  # 扫码登录
 
-# 全局客户端缓存
-_wechat_clients: Dict[str, aiohttp.ClientSession] = {}
-
-
-def get_wechat_client(app_id: str) -> Optional[aiohttp.ClientSession]:
-    """
-    获取微信客户端HTTP连接
-    
-    Args:
-        app_id: 微信AppID
-        
-    Returns:
-        Optional[aiohttp.ClientSession]: HTTP客户端
-    """
-    return _wechat_clients.get(app_id)
-
 
 class WeChatManager:
     """微信API客户端"""
 
-    def __str__(self) -> str:
-        """返回AppID字符串"""
+    def __init__(self):
+        self._initialize()
 
+    def _initialize(self):
         self.app_id = settings.WECHAT_APP_ID
         self.app_secret = settings.WECHAT_APP_SECRET
         self.callback_addr = settings.WECHAT_CALLBACK_ADDR
         self.scope = settings.WECHAT_SCOPE
         self.http_client = None
-
-    def _initialize(self):
-        """初始化RabbitMQ连接参数"""
         self.http_client = aiohttp.ClientSession()
 
-    async def close(self):
-        """关闭连接"""
-        if self.http_client and not self.http_client.closed:
-            await self.http_client.close()
-            self.http_client = None
-
-    async def _http_get(self, url: str, params: Dict = None) -> Dict:
+    def _http_get(self, url: str, params: Dict = None) -> Dict:
         """
         发送HTTP GET请求
         
@@ -87,10 +63,10 @@ class WeChatManager:
             Dict: 响应内容
         """
         try:
-            async with self.http_client.get(url, params=params) as response:
+            with self.http_client.get(url, params=params) as response:
                 response.raise_for_status()
 
-                body = await response.text()
+                body = response.text()
                 result = json.loads(body)
                 if body.get("errcode") != 0:
                     raise Exception(body.get("errmsg"))
@@ -100,7 +76,7 @@ class WeChatManager:
             logger.error(f"微信HTTP GET请求失败: {url}, 错误: {e}")
             raise
 
-    async def _http_post(self, url: str, data: Dict) -> Dict:
+    def _http_post(self, url: str, data: Dict) -> Dict:
         """
         发送HTTP POST请求
         
@@ -111,11 +87,11 @@ class WeChatManager:
         Returns:
             str: 响应内容
         """
-        client = await self._get_http_client()
+        client = self._get_http_client()
         try:
-            async with self.http_client.post(url, json=data) as response:
+            with self.http_client.post(url, json=data) as response:
                 response.raise_for_status()
-                body = await response.text()
+                body = response.text()
                 result = json.loads(body)
                 if body.get("errcode") != 0:
                     raise Exception(body.get("errmsg"))
@@ -125,7 +101,7 @@ class WeChatManager:
             logger.error(f"微信HTTP POST请求失败: {url}, 错误: {e}")
             raise
 
-    async def get_access_token(self) -> str:
+    def get_access_token(self) -> str:
         """
         获取微信AccessToken
         
@@ -138,10 +114,10 @@ class WeChatManager:
             "secret": self.app_secret
         }
 
-        data = await self._http_get(WECHAT_GET_TOKEN_URL, params)
+        data = self._http_get(WECHAT_GET_TOKEN_URL, params)
         return data.get("access_token")
 
-    async def get_jsapi_ticket(self, access_token: str) -> str:
+    def get_jsapi_ticket(self, access_token: str) -> str:
         """
         获取微信JSApi Ticket
         
@@ -152,7 +128,7 @@ class WeChatManager:
             Tuple[str, int]: (ticket, expires_in)
         """
         params = {"access_token": access_token, "type": "jsapi"}
-        data = await self._http_get(WECHAT_GET_TICKET_URL, params)
+        data = self._http_get(WECHAT_GET_TICKET_URL, params)
         return data.get("ticket")
 
     def get_connect_url(self,
@@ -206,7 +182,7 @@ class WeChatManager:
 
         return connect_url
 
-    async def get_user_access_token(self, code: str) -> Dict:
+    def get_user_access_token(self, code: str) -> Dict:
         """
         获取用户AccessToken
         
@@ -236,10 +212,10 @@ class WeChatManager:
             }
             url = WECHAT_OAUTH2_ACCESS_TOKEN_URL
 
-        data = await self._http_get(url, params)
+        data = self._http_get(url, params)
         return data
 
-    async def refresh_user_token(self, refresh_token: str) -> Dict:
+    def refresh_user_token(self, refresh_token: str) -> Dict:
         """
         刷新用户Token
         
@@ -255,10 +231,10 @@ class WeChatManager:
             "refresh_token": refresh_token
         }
 
-        data = await self._http_get(WECHAT_OAUTH2_REFRESH_TOKEN_URL, params)
+        data = self._http_get(WECHAT_OAUTH2_REFRESH_TOKEN_URL, params)
         return data
 
-    async def get_user_info(self, user_access_token: str, open_id: str) -> Dict:
+    def get_user_info(self, user_access_token: str, open_id: str) -> Dict:
         """
         获取用户信息
         
@@ -275,11 +251,10 @@ class WeChatManager:
             "lang": "zh_CN"
         }
 
-        data = await self._http_get(WECHAT_OAUTH2_USERINFO_URL, params)
+        data = self._http_get(WECHAT_OAUTH2_USERINFO_URL, params)
         return data
 
-    async def get_subscribe_user_info(self, access_token: str,
-                                      open_id: str) -> Dict:
+    def get_subscribe_user_info(self, access_token: str, open_id: str) -> Dict:
         """
         获取关注用户信息
         
@@ -296,16 +271,16 @@ class WeChatManager:
             "lang": "zh_CN"
         }
 
-        data = await self._http_get(WECHAT_SUBSCRIBE_USERINFO_URL, params)
+        data = self._http_get(WECHAT_SUBSCRIBE_USERINFO_URL, params)
         return data
 
-    async def send_template_message(self,
-                                    access_token: str,
-                                    open_id: str,
-                                    template_id: str,
-                                    url: str,
-                                    data: Dict,
-                                    mini_program: Dict = None) -> Dict:
+    def send_template_message(self,
+                              access_token: str,
+                              open_id: str,
+                              template_id: str,
+                              url: str,
+                              data: Dict,
+                              mini_program: Dict = None) -> Dict:
         """
         发送模板消息
         
@@ -335,7 +310,7 @@ class WeChatManager:
         if mini_program:
             message["miniprogram"] = mini_program
 
-        data = await self._http_post(api_url, message)
+        data = self._http_post(api_url, message)
         return data
 
 
