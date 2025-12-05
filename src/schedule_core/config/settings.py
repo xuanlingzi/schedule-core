@@ -75,7 +75,7 @@ class CoreSettings(BaseSettings):
     WECHAT_SCOPE: str = "snsapi_userinfo"
 
     # SMTP配置
-    SMTP_HOST: str = ""
+    SMTP_ADDR: str = ""
     SMTP_PORT: int = 465
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""

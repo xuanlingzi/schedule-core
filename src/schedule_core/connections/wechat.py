@@ -5,11 +5,8 @@
 """
 
 import json
-import time
-import asyncio
-import aiohttp
-from datetime import datetime
-from typing import Tuple, Optional, Dict, Any, Union, List
+import requests
+from typing import Dict, Optional
 from schedule_core import logger
 from schedule_core.config.settings import core_settings as settings
 
@@ -38,7 +35,7 @@ WECHAT_PLATFORM_QR = "qrlogin"  # 扫码登录
 
 
 class WeChatManager:
-    """微信API客户端"""
+    """微信API客户端（同步版本，使用requests）"""
 
     def __init__(self):
         self._initialize()
@@ -48,8 +45,14 @@ class WeChatManager:
         self.app_secret = settings.WECHAT_APP_SECRET
         self.callback_addr = settings.WECHAT_CALLBACK_ADDR
         self.scope = settings.WECHAT_SCOPE
-        self.http_client = None
-        self.http_client = aiohttp.ClientSession()
+        self._session = None
+
+    @property
+    def session(self) -> requests.Session:
+        """延迟初始化 requests session"""
+        if self._session is None:
+            self._session = requests.Session()
+        return self._session
 
     def _http_get(self, url: str, params: Dict = None) -> Dict:
         """
@@ -63,15 +66,14 @@ class WeChatManager:
             Dict: 响应内容
         """
         try:
-            with self.http_client.get(url, params=params) as response:
-                response.raise_for_status()
+            response = self.session.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            result = response.json()
 
-                body = response.text()
-                result = json.loads(body)
-                if body.get("errcode") != 0:
-                    raise Exception(body.get("errmsg"))
+            if result.get("errcode") and result.get("errcode") != 0:
+                raise Exception(result.get("errmsg", "未知错误"))
 
-                return result
+            return result
         except Exception as e:
             logger.error(f"微信HTTP GET请求失败: {url}, 错误: {e}")
             raise
@@ -85,18 +87,17 @@ class WeChatManager:
             data: 请求数据
             
         Returns:
-            str: 响应内容
+            Dict: 响应内容
         """
-        client = self._get_http_client()
         try:
-            with self.http_client.post(url, json=data) as response:
-                response.raise_for_status()
-                body = response.text()
-                result = json.loads(body)
-                if body.get("errcode") != 0:
-                    raise Exception(body.get("errmsg"))
+            response = self.session.post(url, json=data, timeout=30)
+            response.raise_for_status()
+            result = response.json()
 
-                return result
+            if result.get("errcode") and result.get("errcode") != 0:
+                raise Exception(result.get("errmsg", "未知错误"))
+
+            return result
         except Exception as e:
             logger.error(f"微信HTTP POST请求失败: {url}, 错误: {e}")
             raise
@@ -106,7 +107,7 @@ class WeChatManager:
         获取微信AccessToken
         
         Returns:
-            Tuple[str, int]: (access_token, expires_in)
+            str: access_token
         """
         params = {
             "grant_type": "client_credential",
@@ -115,7 +116,7 @@ class WeChatManager:
         }
 
         data = self._http_get(WECHAT_GET_TOKEN_URL, params)
-        return data.get("access_token")
+        return data.get("access_token", "")
 
     def get_jsapi_ticket(self, access_token: str) -> str:
         """
@@ -125,11 +126,11 @@ class WeChatManager:
             access_token: 微信AccessToken
             
         Returns:
-            Tuple[str, int]: (ticket, expires_in)
+            str: ticket
         """
         params = {"access_token": access_token, "type": "jsapi"}
         data = self._http_get(WECHAT_GET_TICKET_URL, params)
-        return data.get("ticket")
+        return data.get("ticket", "")
 
     def get_connect_url(self,
                         state: str,
@@ -310,8 +311,8 @@ class WeChatManager:
         if mini_program:
             message["miniprogram"] = mini_program
 
-        data = self._http_post(api_url, message)
-        return data
+        result = self._http_post(api_url, message)
+        return result
 
 
 # 创建全局微信管理器实例

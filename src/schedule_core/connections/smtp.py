@@ -10,6 +10,7 @@ import threading
 from typing import List, Optional
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from schedule_core.config.settings import core_settings as settings
 
 # 全局锁
 _smtp_lock = threading.Lock()
@@ -19,17 +20,19 @@ class SmtpManager:
     """SMTP邮件客户端"""
 
     def __init__(self):
-        self._initialize()
+        """延迟初始化，不在模块导入时连接"""
+        self._client = None
+        self._from_addr = None
 
-    def _initialize(self):
-        """初始化SMTP客户端"""
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        self._client = smtplib.SMTP_SSL(
-            host=settings.SMTP_HOST, port=settings.SMTP_PORT, context=context)
-        self._client.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+    def _connect(self):
+        """建立SMTP连接（使用STARTTLS，参照Go实现）"""
         self._from_addr = settings.SMTP_FROM
+
+        # 先创建SMTP对象（不自动连接）
+        self._client = smtplib.SMTP_SSL(settings.SMTP_ADDR, settings.SMTP_PORT)
+
+        # 使用PlainAuth认证（参照Go的smtp.PlainAuth）
+        self._client.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
 
     def send(self, addresses: List[str], body: bytes) -> None:
         """
@@ -45,7 +48,7 @@ class SmtpManager:
         with _smtp_lock:
             try:
                 # 每次发送时重新建立连接
-                self._initialize()
+                self._connect()
 
                 # 发送邮件
                 self._client.sendmail(
@@ -65,7 +68,7 @@ class SmtpManager:
                 self._client.close()
             except Exception:
                 pass
-            self.client = None
+            self._client = None
 
 
 smtp_manager = SmtpManager()

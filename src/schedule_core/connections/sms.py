@@ -151,11 +151,10 @@ class SmsManager:
         # 请求体
         payload_str = json.dumps(payload)
 
-        # 构建规范请求头
+        # 构建规范请求头（只包含 content-type 和 host）
         canonical_headers = (f"content-type:{content_type}\n"
-                             f"host:{self.host}\n"
-                             f"x-tc-action:{action.lower()}\n")
-        signed_headers = "content-type;host;x-tc-action"
+                             f"host:{self.host}\n")
+        signed_headers = "content-type;host"
 
         # 构建规范请求串
         canonical_request = self._build_canonical_request(
