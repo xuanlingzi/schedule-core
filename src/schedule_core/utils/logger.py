@@ -75,7 +75,7 @@ def get_logger(name="schedule_core", log_file=None):
     root_logger = logging.getLogger()
     if not root_logger.handlers:
         root_logger.addHandler(console_handler)
-        root_logger.addHandler(file_handler)
+        # root_logger.addHandler(file_handler)
         root_logger.setLevel(settings.LOG_LEVEL)
 
     return logger
