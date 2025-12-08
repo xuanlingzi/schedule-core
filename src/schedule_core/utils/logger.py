@@ -66,7 +66,7 @@ def get_logger(name="schedule_core", log_file=None):
 
     # 添加处理器到日志记录器
     logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
+    # logger.addHandler(file_handler)
 
     # 设置 propagate 为 False，防止日志向上传播
     logger.propagate = False
