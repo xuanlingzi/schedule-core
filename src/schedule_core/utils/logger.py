@@ -30,35 +30,37 @@ def get_logger(name="schedule_core", log_file=None):
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(settings.LOG_LEVEL)
 
-    # 创建文件处理器
-    if log_file is None:
-        log_file = f"{name}.log"
-
-    # 根据配置选择使用按大小切分还是按日期切分
-    if settings.LOG_ROTATE_BY_TIME:
-        # 使用 TimedRotatingFileHandler 按日期切分日志
-        file_handler = TimedRotatingFileHandler(
-            filename=settings.LOG_DIR / log_file,
-            when=settings.LOG_ROTATE_INTERVAL,  # 'D'表示按天切分，'H'表示按小时切分
-            interval=1,  # 每1个单位进行切分
-            backupCount=settings.LOG_BACKUP_COUNT,
-            encoding="utf-8")
-        # 设置日志文件后缀格式为 .YYYY-MM-DD
-        file_handler.suffix = settings.LOG_ROTATE_SUFFIX
-    else:
-        # 使用 RotatingFileHandler 按大小切分日志
-        file_handler = RotatingFileHandler(
-            filename=settings.LOG_DIR / log_file,
-            maxBytes=settings.LOG_MAX_BYTES,
-            backupCount=settings.LOG_BACKUP_COUNT,
-            encoding="utf-8")
-    file_handler.setLevel(settings.LOG_LEVEL)
+    # 创建文件处理器（如果需要）
+    # 注意：目前文件处理器被禁用，仅使用控制台输出
+    # 如果需要启用文件日志，请取消下面的注释
+    # if log_file is None:
+    #     log_file = f"{name}.log"
+    # 
+    # # 根据配置选择使用按大小切分还是按日期切分
+    # if settings.LOG_ROTATE_BY_TIME:
+    #     # 使用 TimedRotatingFileHandler 按日期切分日志
+    #     file_handler = TimedRotatingFileHandler(
+    #         filename=settings.LOG_DIR / log_file,
+    #         when=settings.LOG_ROTATE_INTERVAL,  # 'D'表示按天切分，'H'表示按小时切分
+    #         interval=1,  # 每1个单位进行切分
+    #         backupCount=settings.LOG_BACKUP_COUNT,
+    #         encoding="utf-8")
+    #     # 设置日志文件后缀格式为 .YYYY-MM-DD
+    #     file_handler.suffix = settings.LOG_ROTATE_SUFFIX
+    # else:
+    #     # 使用 RotatingFileHandler 按大小切分日志
+    #     file_handler = RotatingFileHandler(
+    #         filename=settings.LOG_DIR / log_file,
+    #         maxBytes=settings.LOG_MAX_BYTES,
+    #         backupCount=settings.LOG_BACKUP_COUNT,
+    #         encoding="utf-8")
+    # file_handler.setLevel(settings.LOG_LEVEL)
 
     # 创建格式化器，使用更详细的日志格式
     formatter = logging.Formatter(
         fmt=settings.LOG_FORMAT, datefmt=settings.LOG_DATE_FORMAT)
     console_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
+    # file_handler.setFormatter(formatter)
 
     # 清除已有的处理器，防止重复添加
     if logger.handlers:

@@ -36,7 +36,7 @@ def init_connections():
 
         # 初始化SMTP连接
         logger.info("正在初始化SMTP连接...")
-        smtp_manager._initialize()
+        # smtp_manager._initialize()
 
         # 初始化短信连接
         logger.info("正在初始化短信连接...")
