@@ -17,6 +17,7 @@ class DatabaseManager:
     _instance: Optional["DatabaseManager"] = None
     _engine = None
     _SessionLocal = None
+    _ReadSessionLocal = None
     _Base = None
 
     def __new__(cls):
@@ -48,9 +49,13 @@ class DatabaseManager:
             logging_name="sqlalchemy.engine",
         )
 
-        # 创建会话工厂
+        # 创建会话工厂（写操作，带事务）
         self._SessionLocal = sessionmaker(
             autocommit=False, autoflush=False, bind=self._engine)
+
+        # 创建只读会话工厂（读操作，无事务）
+        self._ReadSessionLocal = sessionmaker(
+            autocommit=True, autoflush=False, bind=self._engine)
 
         # 创建基类
         self._Base = declarative_base()
@@ -80,14 +85,10 @@ class DatabaseManager:
     def get_read_session(self) -> Generator[Session, None, None]:
         """获取只读数据库会话的上下文管理器（不开启事务，避免长事务报警）
 
-        仅用于 SELECT 查询，不会开启事务也不会 commit/rollback。
+        使用 autocommit=True 的会话工厂，仅用于 SELECT 查询。
         """
-        session = self._SessionLocal()
+        session = self._ReadSessionLocal()
         try:
-            # 设置连接为 autocommit 模式，避免隐式开启事务
-            session.connection(
-                execution_options={"isolation_level": "AUTOCOMMIT"}
-            )
             yield session
         finally:
             session.close()
