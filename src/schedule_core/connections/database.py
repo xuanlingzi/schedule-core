@@ -76,6 +76,22 @@ class DatabaseManager:
         finally:
             session.close()
 
+    @contextmanager
+    def get_read_session(self) -> Generator[Session, None, None]:
+        """获取只读数据库会话的上下文管理器（不开启事务，避免长事务报警）
+
+        仅用于 SELECT 查询，不会开启事务也不会 commit/rollback。
+        """
+        session = self._SessionLocal()
+        try:
+            # 设置连接为 autocommit 模式，避免隐式开启事务
+            session.connection(
+                execution_options={"isolation_level": "AUTOCOMMIT"}
+            )
+            yield session
+        finally:
+            session.close()
+
     def get_db(self) -> Generator[Session, None, None]:
         """获取数据库会话的生成器函数"""
         db = self._SessionLocal()
