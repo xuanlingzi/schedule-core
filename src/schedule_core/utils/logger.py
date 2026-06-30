@@ -8,6 +8,42 @@ from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from schedule_core.config.settings import core_settings as settings
 
 
+def _get_rotate_suffix() -> str:
+    if settings.LOG_ROTATE_SUFFIX:
+        return settings.LOG_ROTATE_SUFFIX
+
+    interval = settings.LOG_ROTATE_INTERVAL.upper()
+    if interval == "H":
+        return "%Y-%m-%d-%H"
+    if interval == "M":
+        return "%Y-%m-%d-%H-%M"
+    if interval == "S":
+        return "%Y-%m-%d-%H-%M-%S"
+    return "%Y-%m-%d"
+
+
+def _create_file_handler(log_file: str) -> logging.Handler:
+    log_path = settings.LOG_DIR / log_file
+
+    if settings.LOG_ROTATE_BY_TIME:
+        handler = TimedRotatingFileHandler(
+            filename=log_path,
+            when=settings.LOG_ROTATE_INTERVAL,
+            interval=1,
+            backupCount=settings.LOG_BACKUP_COUNT,
+            encoding="utf-8",
+        )
+        handler.suffix = _get_rotate_suffix()
+        return handler
+
+    return RotatingFileHandler(
+        filename=log_path,
+        maxBytes=settings.LOG_MAX_BYTES,
+        backupCount=settings.LOG_BACKUP_COUNT,
+        encoding="utf-8",
+    )
+
+
 def get_logger(name="schedule_core", log_file=None):
     """
     获取配置好的日志记录器
@@ -30,37 +66,17 @@ def get_logger(name="schedule_core", log_file=None):
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(settings.LOG_LEVEL)
 
-    # 创建文件处理器（如果需要）
-    # 注意：目前文件处理器被禁用，仅使用控制台输出
-    # 如果需要启用文件日志，请取消下面的注释
-    # if log_file is None:
-    #     log_file = f"{name}.log"
-    # 
-    # # 根据配置选择使用按大小切分还是按日期切分
-    # if settings.LOG_ROTATE_BY_TIME:
-    #     # 使用 TimedRotatingFileHandler 按日期切分日志
-    #     file_handler = TimedRotatingFileHandler(
-    #         filename=settings.LOG_DIR / log_file,
-    #         when=settings.LOG_ROTATE_INTERVAL,  # 'D'表示按天切分，'H'表示按小时切分
-    #         interval=1,  # 每1个单位进行切分
-    #         backupCount=settings.LOG_BACKUP_COUNT,
-    #         encoding="utf-8")
-    #     # 设置日志文件后缀格式为 .YYYY-MM-DD
-    #     file_handler.suffix = settings.LOG_ROTATE_SUFFIX
-    # else:
-    #     # 使用 RotatingFileHandler 按大小切分日志
-    #     file_handler = RotatingFileHandler(
-    #         filename=settings.LOG_DIR / log_file,
-    #         maxBytes=settings.LOG_MAX_BYTES,
-    #         backupCount=settings.LOG_BACKUP_COUNT,
-    #         encoding="utf-8")
-    # file_handler.setLevel(settings.LOG_LEVEL)
+    if log_file is None:
+        log_file = f"{name}.log"
+
+    file_handler = _create_file_handler(log_file)
+    file_handler.setLevel(settings.LOG_LEVEL)
 
     # 创建格式化器，使用更详细的日志格式
     formatter = logging.Formatter(
         fmt=settings.LOG_FORMAT, datefmt=settings.LOG_DATE_FORMAT)
     console_handler.setFormatter(formatter)
-    # file_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
 
     # 清除已有的处理器，防止重复添加
     if logger.handlers:
@@ -68,7 +84,7 @@ def get_logger(name="schedule_core", log_file=None):
 
     # 添加处理器到日志记录器
     logger.addHandler(console_handler)
-    # logger.addHandler(file_handler)
+    logger.addHandler(file_handler)
 
     # 设置 propagate 为 False，防止日志向上传播
     logger.propagate = False
@@ -77,7 +93,7 @@ def get_logger(name="schedule_core", log_file=None):
     root_logger = logging.getLogger()
     if not root_logger.handlers:
         root_logger.addHandler(console_handler)
-        # root_logger.addHandler(file_handler)
+        root_logger.addHandler(file_handler)
         root_logger.setLevel(settings.LOG_LEVEL)
 
     return logger
