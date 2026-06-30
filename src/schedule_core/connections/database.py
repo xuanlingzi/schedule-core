@@ -53,9 +53,11 @@ class DatabaseManager:
         self._SessionLocal = sessionmaker(
             autocommit=False, autoflush=False, bind=self._engine)
 
-        # 创建只读会话工厂（读操作，无事务）
+        # 创建只读会话工厂（读操作）
+        # 注意：autocommit=True 在 SQLAlchemy 2.1+ 中已移除，
+        # 对于只读查询使用 autocommit=False 即可（session close 时自动回滚）
         self._ReadSessionLocal = sessionmaker(
-            autocommit=True, autoflush=False, bind=self._engine)
+            autocommit=False, autoflush=False, bind=self._engine)
 
         # 创建基类
         self._Base = declarative_base()
