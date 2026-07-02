@@ -8,6 +8,9 @@ from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from schedule_core.config.settings import core_settings as settings
 
 
+DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - [%(module)s:%(lineno)d] - %(message)s"
+
+
 def _get_rotate_suffix() -> str:
     if settings.LOG_ROTATE_SUFFIX:
         return settings.LOG_ROTATE_SUFFIX
@@ -67,14 +70,17 @@ def get_logger(name="schedule_core", log_file=None):
     console_handler.setLevel(settings.LOG_LEVEL)
 
     if log_file is None:
-        log_file = f"{name}.log"
+        log_file = settings.LOG_FILE or f"{name}.log"
 
     file_handler = _create_file_handler(log_file)
     file_handler.setLevel(settings.LOG_LEVEL)
 
     # 创建格式化器，使用更详细的日志格式
+    log_format = settings.LOG_FORMAT
+    if log_format.lower() == "json":
+        log_format = DEFAULT_LOG_FORMAT
     formatter = logging.Formatter(
-        fmt=settings.LOG_FORMAT, datefmt=settings.LOG_DATE_FORMAT)
+        fmt=log_format, datefmt=settings.LOG_DATE_FORMAT)
     console_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
 
