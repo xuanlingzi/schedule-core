@@ -82,6 +82,21 @@ class CoreSettings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
 
+    # IMAP配置（用于定期清理服务端「已发送」文件夹，释放邮箱空间）
+    # 用户名/密码留空时自动复用 SMTP_USERNAME/SMTP_PASSWORD（腾讯企业邮同账号）
+    IMAP_ADDR: str = "imap.exmail.qq.com"
+    IMAP_PORT: int = 993
+    IMAP_USERNAME: str = ""
+    IMAP_PASSWORD: str = ""
+    # 「已发送」文件夹名；留空则自动探测带 \Sent 属性的文件夹（腾讯企业邮通常为 "Sent Messages"）
+    IMAP_SENT_FOLDER: str = ""
+    # 清理开关：默认关闭，配好凭据并确认策略后再开启（删除为不可逆操作）
+    IMAP_SENT_CLEAN_ENABLED: bool = False
+    # 只删该天数之前的已发送邮件
+    IMAP_SENT_RETENTION_DAYS: int = 30
+    # 演练模式：只统计与打印将删除的数量，不实际删除
+    IMAP_SENT_CLEAN_DRY_RUN: bool = False
+
     # 短信配置
     SMS_ADDR: str = ""
     SMS_SECRET_ID: str = ""

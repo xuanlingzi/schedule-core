@@ -13,6 +13,7 @@ from schedule_core.connections.mq import mq_manager
 from schedule_core.connections.wechat import wechat_manager
 from schedule_core.connections.smtp import smtp_manager
 from schedule_core.connections.sms import sms_manager
+from schedule_core.connections.imap import imap_manager
 
 __all__ = [
     "TaskScheduler",
@@ -25,4 +26,5 @@ __all__ = [
     "wechat_manager",
     "smtp_manager",
     "sms_manager",
+    "imap_manager",
 ]

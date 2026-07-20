@@ -8,6 +8,7 @@ from .mq import RabbitMQManager, mq_manager
 from .wechat import WeChatManager, wechat_manager
 from .sms import SmsManager, sms_manager
 from .smtp import SmtpManager, smtp_manager
+from .imap import ImapManager, imap_manager
 
 __all__ = [
     "DatabaseManager",
@@ -21,4 +22,6 @@ __all__ = [
     "sms_manager",
     "SmtpManager",
     "smtp_manager",
+    "ImapManager",
+    "imap_manager",
 ]
