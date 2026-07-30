@@ -96,6 +96,12 @@ class CoreSettings(BaseSettings):
     IMAP_SENT_RETENTION_DAYS: int = 30
     # 演练模式：只统计与打印将删除的数量，不实际删除
     IMAP_SENT_CLEAN_DRY_RUN: bool = False
+    # 收件箱清理（服务账号收件箱以退信/自动回复为主，定期清理释放空间）
+    IMAP_INBOX_CLEAN_ENABLED: bool = False
+    # 只删该天数之前的收件箱邮件
+    IMAP_INBOX_RETENTION_DAYS: int = 30
+    # 演练模式：只统计与打印将删除的数量，不实际删除
+    IMAP_INBOX_CLEAN_DRY_RUN: bool = False
 
     # 短信配置
     SMS_ADDR: str = ""

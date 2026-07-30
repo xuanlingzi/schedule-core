@@ -118,10 +118,27 @@ class ImapManager:
                           folder: Optional[str] = None) -> int:
         """清理「已发送」文件夹中 retention_days 天之前的邮件。
 
+        folder 留空时自动探测「已发送」文件夹。
+        """
+        return self.clean_folder_before(folder, retention_days, dry_run)
+
+    def clean_inbox_before(self, retention_days: int,
+                           dry_run: bool = False) -> int:
+        """清理收件箱（INBOX）中 retention_days 天之前的邮件。
+
+        INBOX 是 IMAP 协议保留名（RFC 3501），所有服务器均可直接使用，
+        无需像「已发送」那样探测本地化文件夹名。
+        """
+        return self.clean_folder_before("INBOX", retention_days, dry_run)
+
+    def clean_folder_before(self, folder: Optional[str], retention_days: int,
+                            dry_run: bool = False) -> int:
+        """清理指定文件夹中 retention_days 天之前的邮件。
+
         Args:
+            folder: 目标文件夹；为 None 时自动探测「已发送」文件夹
             retention_days: 保留天数，仅删除该天数之前的邮件（BEFORE 该日期）
             dry_run: 演练模式，只统计不删除
-            folder: 指定文件夹，留空则自动探测
 
         Returns:
             int: 实际删除（dry_run 时为将删除）的邮件数量
