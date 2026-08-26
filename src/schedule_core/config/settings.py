@@ -22,6 +22,13 @@ class CoreSettings(BaseSettings):
     LOG_DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
     # 日志切分配置
+    # LOG_ROTATE_MODE 显式指定切分策略，优先级高于 LOG_ROTATE_BY_TIME：
+    #   "time"  —— TimedRotatingFileHandler（进程内按时间轮转，适合常驻进程）
+    #   "size"  —— RotatingFileHandler（进程内按大小轮转，适合常驻进程）
+    #   "dated" —— 文件名内嵌日期的普通 FileHandler，每天一个文件，不依赖进程存活，
+    #              适合 systemd oneshot 短命任务（跑完即退，进程内轮转无法触发）
+    # 留空时按 LOG_ROTATE_BY_TIME 回退到 "time"/"size"，保持旧行为兼容。
+    LOG_ROTATE_MODE: str = ""
     LOG_ROTATE_BY_TIME: bool = True  # 是否按时间切分，False则按大小切分
     LOG_ROTATE_INTERVAL: str = "H"  # 切分时间单位: D=天, H=小时, M=分钟, S=秒
     LOG_ROTATE_SUFFIX: str = "%Y-%m-%d-%H"  # 日志文件后缀格式
