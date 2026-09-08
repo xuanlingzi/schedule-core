@@ -46,11 +46,13 @@ class CoreSettings(BaseSettings):
     MYSQL_MAX_OVERFLOW: int = 10
     MYSQL_POOL_TIMEOUT: int = 30
     MYSQL_POOL_RECYCLE: int = 1800
-    # SQLAlchemy 引擎/连接池日志开关，独立于 LOG_LEVEL。
-    # 默认关闭：即使 LOG_LEVEL=DEBUG 也不会打出每条 SQL 和连接池 checkout/return
-    # 的高频日志（常驻进程尤其是 CALLBACK_SERVER 会被刷屏）。
-    # 需要排查 SQL 时单独设 SQL_ECHO=true 打开。
+    # SQLAlchemy 日志开关，独立于 LOG_LEVEL，engine 与 pool 分开控制。
+    # SQL_ECHO       —— engine 层，打出每条 SQL 语句（INFO 级），有业务排查价值。
+    # SQL_ECHO_POOL  —— pool 层，连接池 checkout/return/rollback-on-return/closing
+    #                   等高频日志（DEBUG 级），无业务意义，常驻进程会被刷屏，默认关。
+    # 二者默认均关，即使 LOG_LEVEL=DEBUG 也不会被 SQLAlchemy 刷屏；按需单独打开。
     SQL_ECHO: bool = False
+    SQL_ECHO_POOL: bool = False
 
     # 使用 property 装饰器来动态构建 DATABASE_URL
     @property
