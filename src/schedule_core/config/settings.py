@@ -51,7 +51,7 @@ class CoreSettings(BaseSettings):
     # SQL_ECHO_POOL  —— pool 层，连接池 checkout/return/rollback-on-return/closing
     #                   等高频日志（DEBUG 级），无业务意义，常驻进程会被刷屏，默认关。
     # 二者默认均关，即使 LOG_LEVEL=DEBUG 也不会被 SQLAlchemy 刷屏；按需单独打开。
-    SQL_ECHO: bool = False
+    SQL_ECHO: bool = True
     SQL_ECHO_POOL: bool = False
 
     # 使用 property 装饰器来动态构建 DATABASE_URL
