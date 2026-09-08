@@ -32,15 +32,22 @@ class DatabaseManager:
     def _initialize(self):
         """初始化数据库连接"""
         # 配置 SQLAlchemy 日志
-        if settings.LOG_LEVEL.upper() == "DEBUG":
+        # 注意：SQLAlchemy 引擎/连接池日志由独立的 SQL_ECHO 控制，不再跟随
+        # LOG_LEVEL。否则应用一开 DEBUG，engine 的每条 SQL、pool 的
+        # checkout/return/close 就会把常驻进程（如 CALLBACK_SERVER）刷爆。
+        if settings.SQL_ECHO:
             logging.basicConfig()
             logging.getLogger("sqlalchemy.engine").setLevel(logging.DEBUG)
             logging.getLogger("sqlalchemy.pool").setLevel(logging.DEBUG)
+        else:
+            # 显式压到 WARNING，避免 LOG_LEVEL=DEBUG 时经由 root logger 传播
+            logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+            logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
 
         # 创建数据库引擎，使用连接池
         self._engine = create_engine(
             settings.DATABASE_URL,
-            echo=True if settings.LOG_LEVEL.upper() == "DEBUG" else False,
+            echo=settings.SQL_ECHO,
             poolclass=QueuePool,
             pool_size=settings.MYSQL_POOL_SIZE,
             max_overflow=settings.MYSQL_MAX_OVERFLOW,
