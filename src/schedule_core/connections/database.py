@@ -13,6 +13,31 @@ from contextlib import contextmanager
 from schedule_core.config.settings import core_settings as settings
 
 
+class _SuppressTxnNoiseFilter(logging.Filter):
+    """过滤掉 SQLAlchemy engine 的事务标记行（BEGIN/COMMIT/ROLLBACK/SAVEPOINT）。
+
+    这些行与真正的 SQL 语句走同一个 logger、同为 INFO 级，echo 无法单独关闭。
+    只保留有排查价值的 SQL 语句本身，事务噪音一律丢弃。
+    挂在 handler 上（而非某个 logger），因为实际发日志的 logger 名带 logging_name
+    后缀，挂在祖先 logger 上滤不到传播下来的记录。
+    """
+
+    _TXN_PREFIXES = (
+        "BEGIN",
+        "COMMIT",
+        "ROLLBACK",
+        "SAVEPOINT",
+        "RELEASE SAVEPOINT",
+    )
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.name.startswith("sqlalchemy.engine"):
+            msg = record.getMessage().lstrip()
+            if msg.startswith(self._TXN_PREFIXES):
+                return False
+        return True
+
+
 class DatabaseManager:
     _instance: Optional["DatabaseManager"] = None
     _engine = None
@@ -41,11 +66,19 @@ class DatabaseManager:
         logging.getLogger("sqlalchemy.pool").setLevel(
             logging.DEBUG if settings.SQL_ECHO_POOL else logging.WARNING)
 
+        # 开启 SQL 日志但不想看事务标记（BEGIN/COMMIT/ROLLBACK）时，给根 logger
+        # 的所有 handler 挂上过滤器。SQL_ECHO_TXN=true 可保留事务标记。
+        if settings.SQL_ECHO and not settings.SQL_ECHO_TXN:
+            self._install_txn_noise_filter()
+
         # 创建数据库引擎，使用连接池
+        # 注意：不用 echo/echo_pool（保持 False），SQL 日志纯靠上面的 logger 级别驱动。
+        # 因为 echo=True 时 SQLAlchemy 会给引擎 logger 自加一个默认 StreamHandler，
+        # 打出一份平铺格式、且绕过我们过滤器的重复日志（事务标记也会重复出现）。
         self._engine = create_engine(
             settings.DATABASE_URL,
-            echo=settings.SQL_ECHO,
-            echo_pool=settings.SQL_ECHO_POOL,
+            echo=False,
+            echo_pool=False,
             poolclass=QueuePool,
             pool_size=settings.MYSQL_POOL_SIZE,
             max_overflow=settings.MYSQL_MAX_OVERFLOW,
@@ -53,6 +86,15 @@ class DatabaseManager:
             pool_recycle=settings.MYSQL_POOL_RECYCLE,
             logging_name="sqlalchemy.engine",
         )
+
+        # 摘掉 SQLAlchemy 可能为引擎/连接池 logger 自加的默认 handler：一旦检测到
+        # 会输出 INFO/DEBUG，它会补一个 StreamHandler，绕过我们的格式与事务过滤器。
+        # 清空后这些记录只向上传播到 root handler，格式统一、过滤器生效。
+        for _lg in (getattr(self._engine, "logger", None),
+                    getattr(self._engine.pool, "logger", None)):
+            if isinstance(_lg, logging.Logger):
+                _lg.handlers = []
+                _lg.propagate = True
 
         # 创建会话工厂（写操作，带事务）
         self._SessionLocal = sessionmaker(
@@ -66,6 +108,15 @@ class DatabaseManager:
 
         # 创建基类
         self._Base = declarative_base()
+
+    @staticmethod
+    def _install_txn_noise_filter():
+        """把事务噪音过滤器挂到根 logger 的每个 handler 上（幂等）。"""
+        root = logging.getLogger()
+        for handler in root.handlers:
+            if not any(isinstance(f, _SuppressTxnNoiseFilter)
+                       for f in handler.filters):
+                handler.addFilter(_SuppressTxnNoiseFilter())
 
     @property
     def engine(self):

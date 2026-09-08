@@ -53,6 +53,9 @@ class CoreSettings(BaseSettings):
     # 二者默认均关，即使 LOG_LEVEL=DEBUG 也不会被 SQLAlchemy 刷屏；按需单独打开。
     SQL_ECHO: bool = True
     SQL_ECHO_POOL: bool = False
+    # SQL_ECHO_TXN —— 是否显示事务标记 BEGIN/COMMIT/ROLLBACK/SAVEPOINT（INFO 级）。
+    # 默认关：开了 SQL_ECHO 时只留真正的 SQL 语句，滤掉这些高频无意义的事务行。
+    SQL_ECHO_TXN: bool = False
 
     # 使用 property 装饰器来动态构建 DATABASE_URL
     @property
