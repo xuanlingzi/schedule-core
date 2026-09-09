@@ -195,6 +195,29 @@ def _maintain_dated(log_path: Path, backup_days: int) -> None:
                 pass
 
 
+def _add_file_sink(log_path: Path, mode: str, common: dict,
+                   max_bytes: int, backup_count: int, interval: str,
+                   filter_fn=None) -> None:
+    """按模式为一个文件路径添加 loguru 文件 sink（可带 filter 做业务分流）。"""
+    extra = {"filter": filter_fn} if filter_fn is not None else {}
+    rot_size = max_bytes if max_bytes and max_bytes > 0 else None
+    if mode == "dated":
+        # 文件名内嵌日期，不依赖进程存活即可按天分文件；当天超限再按大小切。
+        # 注意：loguru 对含 {time} 的 sink 不做 retention，历史清理与跨天压缩由
+        # _maintain_dated 在启动时接管（backup_count 在 dated 下语义为「保留天数」）。
+        _maintain_dated(log_path, backup_count)
+        sink = str(log_path.with_name(
+            f"{log_path.stem}.{{time:YYYY-MM-DD}}{log_path.suffix}"))
+        _loguru_logger.add(sink, rotation=rot_size, compression="gz", **common, **extra)
+    elif mode == "size":
+        _loguru_logger.add(str(log_path), rotation=rot_size, retention=backup_count,
+                           compression="gz", **common, **extra)
+    else:  # time：时间(整点)+大小 谁先到谁切
+        _loguru_logger.add(str(log_path),
+                           rotation=_make_time_size_rotation(interval, max_bytes),
+                           retention=backup_count, compression="gz", **common, **extra)
+
+
 def _configure(log_file: str) -> None:
     """配置 loguru 的 stdout 与文件 sink（进程内只执行一次）。"""
     global _configured
@@ -207,10 +230,11 @@ def _configure(log_file: str) -> None:
     level = settings.LOG_LEVEL
     max_bytes = settings.LOG_MAX_BYTES
     backup_count = settings.LOG_BACKUP_COUNT
+    interval = settings.LOG_ROTATE_INTERVAL
 
     _loguru_logger.remove()  # 清掉 loguru 默认的 stderr sink
 
-    # 控制台（stdout），交给 systemd/journald 采集
+    # 控制台（stdout）：全量输出（不分流），交给 systemd/journald 采集
     _loguru_logger.add(
         sys.stdout, level=level, format=_LOGURU_FORMAT,
         backtrace=False, diagnose=False,
@@ -221,35 +245,19 @@ def _configure(log_file: str) -> None:
         backtrace=False, diagnose=False, enqueue=False,
     )
 
-    if mode == "dated":
-        # 文件名内嵌日期，不依赖进程存活即可按天分文件；当天超限再按大小切。
-        # 注意：loguru 对含 {time} 的 sink 不做 retention，历史清理与跨天压缩由
-        # _maintain_dated 在启动时接管（backup_count 在 dated 下语义为「保留天数」）。
-        _maintain_dated(log_path, backup_count)
-        sink = str(log_path.with_name(
-            f"{log_path.stem}.{{time:YYYY-MM-DD}}{log_path.suffix}"))
-        _loguru_logger.add(
-            sink,
-            rotation=(max_bytes if max_bytes and max_bytes > 0 else None),
-            compression="gz",
-            **common,
-        )
-    elif mode == "size":
-        _loguru_logger.add(
-            str(log_path),
-            rotation=(max_bytes if max_bytes and max_bytes > 0 else None),
-            retention=backup_count,
-            compression="gz",
-            **common,
-        )
-    else:  # time：时间(整点)+大小 谁先到谁切
-        _loguru_logger.add(
-            str(log_path),
-            rotation=_make_time_size_rotation(settings.LOG_ROTATE_INTERVAL, max_bytes),
-            retention=backup_count,
-            compression="gz",
-            **common,
-        )
+    # 业务分流：LOG_MODULE_ROUTES 里每个模块关键字各写 <关键字>.log，按 record["name"]
+    #（调用模块名，如 rktv_job.tasks.push_notice）过滤，业务代码无需改动。
+    # 典型用于 callback_server：一个进程分发多个业务 handler，按业务落到各自文件。
+    routes = [r.strip() for r in (settings.LOG_MODULE_ROUTES or "").split(",") if r.strip()]
+    for key in routes:
+        biz_path = log_path.with_name(f"{key}{log_path.suffix}")
+        _add_file_sink(biz_path, mode, common, max_bytes, backup_count, interval,
+                       filter_fn=(lambda r, k=key: k in r["name"]))
+
+    # 主文件：有分流时排除已路由模块，只留框架自身与未分类日志
+    main_filter = (lambda r: not any(k in r["name"] for k in routes)) if routes else None
+    _add_file_sink(log_path, mode, common, max_bytes, backup_count, interval,
+                   filter_fn=main_filter)
 
     # 把标准库 logging（SQLAlchemy 等第三方库）接入 loguru
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)

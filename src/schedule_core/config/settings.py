@@ -18,22 +18,26 @@ class CoreSettings(BaseSettings):
     LOG_DIR: Path = Path("schedule_core")
     LOG_FILE: str = ""
     LOG_LEVEL: str = "INFO"
-    LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - [%(module)s:%(lineno)d] - %(message)s"
-    LOG_DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+    # 注：日志格式由 loguru 后端在 logger.py 的 _LOGURU_FORMAT 固定（等价原格式），
+    # 不再从这里读取 LOG_FORMAT / LOG_DATE_FORMAT。
 
-    # 日志切分配置
+    # 日志切分配置（loguru 后端）
     # LOG_ROTATE_MODE 显式指定切分策略，优先级高于 LOG_ROTATE_BY_TIME：
-    #   "time"  —— TimedRotatingFileHandler（进程内按时间轮转，适合常驻进程）
-    #   "size"  —— RotatingFileHandler（进程内按大小轮转，适合常驻进程）
-    #   "dated" —— 文件名内嵌日期的普通 FileHandler，每天一个文件，不依赖进程存活，
-    #              适合 systemd oneshot 短命任务（跑完即退，进程内轮转无法触发）
-    # 留空时按 LOG_ROTATE_BY_TIME 回退到 "time"/"size"，保持旧行为兼容。
+    #   "time"  —— 按时间(整点)+大小，谁先到谁切，适合常驻进程
+    #   "size"  —— 仅按大小切，适合常驻进程
+    #   "dated" —— 文件名内嵌日期，每天一个文件，不依赖进程存活，适合 systemd
+    #              oneshot 短命任务（跑完即退，进程内轮转无法触发）
+    # 留空时按 LOG_ROTATE_BY_TIME 回退到 "time"/"size"。
     LOG_ROTATE_MODE: str = ""
     LOG_ROTATE_BY_TIME: bool = True  # 是否按时间切分，False则按大小切分
     LOG_ROTATE_INTERVAL: str = "H"  # 切分时间单位: D=天, H=小时, M=分钟, S=秒
-    LOG_ROTATE_SUFFIX: str = "%Y-%m-%d-%H"  # 日志文件后缀格式
     LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10MB，按大小切分时使用
     LOG_BACKUP_COUNT: int = 30  # 保留的备份文件数量
+    # 业务日志分流：逗号分隔的「模块关键字」，每个匹配的模块日志单独写 <关键字>.log，
+    # 主日志文件则排除这些模块（只留框架自身与未分类）。留空 = 不分流（全部进主文件）。
+    # 典型用于 callback_server 这种「一个进程内分发多个业务 handler」的场景，按调用
+    # 模块名(record["name"])自动路由，业务代码无需改动。
+    LOG_MODULE_ROUTES: str = ""
 
     # 数据库配置
     MYSQL_USER: str = ""
